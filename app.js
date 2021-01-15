@@ -5,7 +5,7 @@ const logger = require("morgan");
 
 const ReservationService = require("./services/ReservationService");
 const WitService = require("./services/WitService");
-
+const MessageThreadService = require("./services/MessageThreadService");
 const indexRouter = require("./routes/index");
 const slackRouter = require("./routes/bots/slack");
 
@@ -13,7 +13,7 @@ module.exports = (config) => {
   const app = express();
   const reservationService = new ReservationService(config.reservations);
   const witService = new WitService({ accessToken: config.wit.token });
-
+  const messageThreadService = new MessageThreadService();
   // view engine setup
   app.set("views", path.join(__dirname, "views"));
   app.set("view engine", "ejs");
@@ -22,7 +22,12 @@ module.exports = (config) => {
 
   app.use(
     "/bots/slack",
-    slackRouter({ reservationService, config, witService })
+    slackRouter({
+      reservationService,
+      config,
+      witService,
+      messageThreadService,
+    })
   );
 
   app.use(express.json());

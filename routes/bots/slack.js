@@ -4,8 +4,17 @@ const { WebClient } = require("@slack/web-api");
 const router = express.Router();
 const moment = require("moment");
 
+const createSessionId = (channel, user, ts) => {
+  return `${channel}-${user}-${ts}`;
+};
+
 module.exports = (params) => {
-  const { config, reservationService, witService } = params;
+  const {
+    config,
+    reservationService,
+    witService,
+    messageThreadService,
+  } = params;
 
   const slackEvents = createEventAdapter(config.slack.signingSecret);
   const slackWebClient = new WebClient(config.slack.token);
@@ -38,10 +47,9 @@ module.exports = (params) => {
     }
     return response;
   };
-
-  const handleAppMention = async (event) => {
+  const processEvent = async (session, evt) => {
     const mention = /<@[A-Z0-9]+>/;
-    const eventText = event.text.replace(mention, "").trim();
+    const eventText = evt.text.replace(mention, "").trim();
     let text = "";
     if (!eventText || eventText === "") {
       text = "Hey";
@@ -51,11 +59,38 @@ module.exports = (params) => {
 
     return slackWebClient.chat.postMessage({
       text: text,
-      channel: event.channel,
+      channel: session.context.slack.channel,
+      thread_ts: session.context.slack.thread_ts,
       username: "Lotus",
     });
   };
+  const handleAppMention = async (event) => {
+    const { channel, user, thread_ts, ts } = event;
+    const sessionId = createSessionId(channel, user, thread_ts || ts);
+    let session = messageThreadService.getSession(sessionId);
+    if (!session) {
+      session = messageThreadService.createSession(sessionId);
+      session.context = {
+        slack: {
+          channel,
+          user,
+          thread_ts: thread_ts || ts,
+        },
+      };
+    }
+    return processEvent(session, event);
+  };
+
+  const handleMessage = (evt) => {
+    const { channel, user, thread_ts, ts } = evt;
+    const sessionId = createSessionId(channel, user, thread_ts, ts);
+    session = messageThreadService.getSession(sessionId);
+    if (!session) return false;
+    return processEvent(session, evt);
+  };
+
   slackEvents.on("app_mention", handleAppMention);
+  slackEvents.on("message", handleMessage);
   router.use("/events", slackEvents.requestListener());
   return router;
 };
