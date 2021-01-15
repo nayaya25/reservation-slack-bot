@@ -4,7 +4,7 @@ This repository contains the code for a simplistic Slack Bot that takes table re
 
 ## Setting up the project
 
-* In your terminal, create directory `building-bots-res` and **change into it**.
+* In your terminal, create directory `building-bots-reservation` and **change into it**.
 * Run 
   ```bash
   git clone --bare git@github.com:danielkhan/building-bots-reservation.git .git
