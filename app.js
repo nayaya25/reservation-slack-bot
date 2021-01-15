@@ -6,6 +6,7 @@ const logger = require("morgan");
 const ReservationService = require("./services/ReservationService");
 const WitService = require("./services/WitService");
 const MessageThreadService = require("./services/MessageThreadService");
+
 const indexRouter = require("./routes/index");
 const slackRouter = require("./routes/bots/slack");
 

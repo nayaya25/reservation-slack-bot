@@ -3,7 +3,7 @@ const { createEventAdapter } = require("@slack/events-api");
 const { WebClient } = require("@slack/web-api");
 const router = express.Router();
 const moment = require("moment");
-
+const ConversationService = require("../../services/ConversationService");
 const createSessionId = (channel, user, ts) => {
   return `${channel}-${user}-${ts}`;
 };
@@ -19,42 +19,33 @@ module.exports = (params) => {
   const slackEvents = createEventAdapter(config.slack.signingSecret);
   const slackWebClient = new WebClient(config.slack.token);
 
-  const handleResponse = async (text) => {
-    const entities = await witService.query(text);
-    let response = "";
-    const {
-      intent,
-      customerName,
-      reservationDateTime,
+  const handleReservation = async (entities) => {
+    const { customerName, reservationDateTime, numberOfGuests } = entities;
+    const reservationResult = await reservationService.tryReservation(
+      moment(reservationDateTime).unix(),
       numberOfGuests,
-    } = entities;
-
-    if (
-      !intent ||
-      intent !== "reservation" ||
-      !customerName ||
-      !reservationDateTime ||
-      !numberOfGuests
-    ) {
-      response = "Sorry - Could you rephrase that?";
-    } else {
-      const reservationResult = await reservationService.tryReservation(
-        moment(reservationDateTime).unix(),
-        numberOfGuests,
-        customerName
-      );
-      response = reservationResult.success || reservationResult.error;
-    }
-    return response;
+      customerName
+    );
+    return reservationResult.success || reservationResult.error;
   };
+
   const processEvent = async (session, evt) => {
     const mention = /<@[A-Z0-9]+>/;
     const eventText = evt.text.replace(mention, "").trim();
+
+    const { conversation } = await ConversationService.run(
+      witService,
+      eventText,
+      session.context
+    );
+    const { entities } = conversation;
+
     let text = "";
-    if (!eventText || eventText === "") {
-      text = "Hey";
+    if (!conversation.complete) {
+      text = conversation.followUp;
     } else {
-      text = await handleResponse(eventText);
+      text = await handleReservation(entities);
+      conversation.entities = {};
     }
 
     return slackWebClient.chat.postMessage({
@@ -64,6 +55,7 @@ module.exports = (params) => {
       username: "Lotus",
     });
   };
+
   const handleAppMention = async (event) => {
     const { channel, user, thread_ts, ts } = event;
     const sessionId = createSessionId(channel, user, thread_ts || ts);
@@ -91,6 +83,7 @@ module.exports = (params) => {
 
   slackEvents.on("app_mention", handleAppMention);
   slackEvents.on("message", handleMessage);
+
   router.use("/events", slackEvents.requestListener());
   return router;
 };
