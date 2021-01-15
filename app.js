@@ -3,15 +3,16 @@ const express = require("express");
 const path = require("path");
 const logger = require("morgan");
 
-const ReservationServce = require("./services/ReservationService");
+const ReservationService = require("./services/ReservationService");
+const WitService = require("./services/WitService");
 
 const indexRouter = require("./routes/index");
 const slackRouter = require("./routes/bots/slack");
 
 module.exports = (config) => {
   const app = express();
-
-  const reservationService = new ReservationServce(config.reservations);
+  const reservationService = new ReservationService(config.reservations);
+  const witService = new WitService({ accessToken: config.wit.token });
 
   // view engine setup
   app.set("views", path.join(__dirname, "views"));
@@ -19,7 +20,10 @@ module.exports = (config) => {
 
   app.use(logger("dev"));
 
-  app.use("/bots/slack", slackRouter({ reservationService, config }));
+  app.use(
+    "/bots/slack",
+    slackRouter({ reservationService, config, witService })
+  );
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
@@ -33,7 +37,16 @@ module.exports = (config) => {
     return next();
   });
 
-  app.use("/", indexRouter({ reservationService, config }));
+  app.use(async (req, res, next) => {
+    const entitites = await witService.query(
+      "Could you please reserve a table for 3 people, next week on friday at 12pm for Bashir?"
+    );
+    return next();
+  });
+
+  // console.log("WIT LOG FROM APP:", witService);
+
+  app.use("/", indexRouter({ config, reservationService }));
 
   // catch 404 and forward to error handler
   app.use((req, res, next) => {

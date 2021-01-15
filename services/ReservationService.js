@@ -1,5 +1,5 @@
-const fs = require('fs');
-const util = require('util');
+const fs = require("fs");
+const util = require("util");
 
 const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
@@ -30,21 +30,28 @@ class ReservationService {
   }
 
   async tryReservation(datetime, numberOfGuests, customerName) {
-    const data = await this.getData() || [];
-    if (numberOfGuests > 4 || !this.isAvailable(datetime, data)) {
+    const data = (await this.getData()) || [];
+    if (numberOfGuests > 4) {
       return {
-        error: 'There are no free tables available at that time.',
+        error: "Sorry! Our tables accomodate maximum of 4 persons only.",
+      };
+    } else if (!this.isAvailable(datetime, data)) {
+      return {
+        error: "There are no free tables available at that time.",
       };
     }
     data.unshift({ datetime, numberOfGuests, customerName });
-    await writeFile(this.datafile, JSON.stringify(data.sort((a, b) => b.datetime - a.datetime)));
+    await writeFile(
+      this.datafile,
+      JSON.stringify(data.sort((a, b) => b.datetime - a.datetime))
+    );
     return {
-      success: 'The table was successfully reserved!',
+      success: "The table was successfully reserved. Thank you!",
     };
   }
 
   async getData() {
-    const data = await readFile(this.datafile, 'utf8');
+    const data = await readFile(this.datafile, "utf8");
     if (!data) return [];
     return JSON.parse(data);
   }
