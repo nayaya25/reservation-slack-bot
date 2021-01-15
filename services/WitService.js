@@ -7,17 +7,21 @@ class WitService {
 
   async query(text) {
     const queryResult = await this.client.message(text);
-    const { entities, intents } = queryResult;
-    const [intent] = intents;
     const extractedEntities = {};
-    extractedEntities["intent"] = intent.name;
+    const { entities, intents } = queryResult;
+    intents &&
+      intents.map((intent) => {
+        extractedEntities["intent"] = intent.name;
+      });
+
     Object.keys(entities).forEach((key) => {
       const [entity] = entities[key];
-      if (entity.type === "interval") {
-        extractedEntities[entity.role] = entity.to.value;
-      } else {
-        //   const newKey = key.split(":").pop();
-        extractedEntities[entity.role] = entity.value;
+      if (entity.confidence > 0.7) {
+        if (entity.type === "interval") {
+          extractedEntities[entity.role] = entity.to.value;
+        } else {
+          extractedEntities[entity.role] = entity.value;
+        }
       }
     });
     return extractedEntities;

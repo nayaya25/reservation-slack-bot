@@ -24,8 +24,20 @@ class ConversationService {
       };
     }
 
+    if (context.conversation.entities.intent === "farewell") {
+      context.conversation.followUp = "Okay, Bye";
+      context.conversation.exit = true;
+      return context;
+    }
+
     if (context.conversation.entities.intent === "reservation") {
       return ConversationService.intentReservation(context);
+    }
+
+    if (context.conversation.entities.intent === "greetings") {
+      context.conversation.followUp =
+        "Hello, I am Lotus. What can I do for you?";
+      return context;
     }
     context.conversation.followUp = "Could you rephrase that please?";
     return context;
@@ -42,7 +54,7 @@ class ConversationService {
     }
 
     if (!entities.numberOfGuests) {
-      conversation.followUp = "For ho many persons, please?";
+      conversation.followUp = "For how many persons, please?";
       return context;
     }
 

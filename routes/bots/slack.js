@@ -39,13 +39,16 @@ module.exports = (params) => {
       session.context
     );
     const { entities } = conversation;
-
+    console.log(conversation);
     let text = "";
     if (!conversation.complete) {
       text = conversation.followUp;
     } else {
       text = await handleReservation(entities);
-      conversation.entities = {};
+    }
+
+    if (conversation.exit || conversation.complete) {
+      session.context.conversation = {};
     }
 
     return slackWebClient.chat.postMessage({
