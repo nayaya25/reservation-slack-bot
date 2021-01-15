@@ -1,12 +1,10 @@
-# Building bots with Node.js
+# Slack bot with Node.js
 
-This repository contains the code for my course 'Building Bots with Node.js' on [LinkedIn Learning](https://www.linkedin.com/learning/instructors/daniel-khan).
-
-The master branch contains the initial version to get started with, while the branches contain the state of the code at the beginning (e.g. 02_02**b**) and end (e.g. 02_02**e**) of a video.
+This repository contains the code for a simplistic Slack Bot that takes table reservation orders 
 
 ## Setting up the project
 
-* In your terminal, create directory `building-bots-reservation` and **change into it**.
+* In your terminal, create directory `building-bots-res` and **change into it**.
 * Run 
   ```bash
   git clone --bare git@github.com:danielkhan/building-bots-reservation.git .git
